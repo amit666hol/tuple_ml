@@ -41,9 +41,6 @@ class Net(nn.Module):
         return x
 
 
-# classes = ['up', 'down', 'left', 'right', 'none', 'upright', 'upleft', 'downright', 'downleft']
-#
-#
 # class DataSet(object):
 #     def __init__(self, root, width, height):
 #         self.root = root
@@ -85,13 +82,16 @@ import torch.optim as optim
 def main(root):
     # # get some random training images
     # # transform = transforms.Compose([transforms.ToTensor()]) # Defing PyTorch Transform
-    width, height = int(640/8), int(480/8)
-    #
+    # width, height = int(640/8), int(480/8)
+    width, height = 640, 480
     # trainset = DataSet(root, width, height)
     #
     # trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
     #                                           shuffle=True, num_workers=2)
+
+    loss = nn.MSELoss()
     net = Net(width, height)
+
 
     # VERY_NICE_criterion = nn.CrossEntropyLoss()
     # optimizer = optim.SGD(net.parameters(), lr=0.00001, momentum=0.9)
@@ -124,6 +124,23 @@ def main(root):
     # PATH = "sans_model7c.pth"
     # torch.save(net.state_dict(), PATH)
 
+def loss_test():
+    width, height = 640, 480
+    mseloss = nn.MSELoss()
+    net = Net(width, height)
+    optimizer = optim.SGD(net.parameters(), lr=0.01, momentum=0.9)
+    target = torch.tensor([0, 1]).float()
+    for i in range(20):
+        inputs = torch.rand(1, 3, width, height, requires_grad=True)
+        optimizer.zero_grad()
+        output = net(inputs)[0]
+        print("output:", output, target)
+        loss = mseloss(output, target)
+        print("loss:", loss.item())
+        loss.backward()
+        optimizer.step()
+
 
 if __name__ == '__main__':
-    main("")
+    # main("")
+    loss_test()
