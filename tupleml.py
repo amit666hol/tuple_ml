@@ -41,38 +41,41 @@ class Net(nn.Module):
         return x
 
 
-# class DataSet(object):
-#     def __init__(self, root, width, height):
-#         self.root = root
-#         # load all image files, sorting them to
-#         # ensure that they are aligned
-#         self.imgs = list(sorted(os.listdir(os.path.join("", self.root))))
-#         self.width, self.height = width, height
-#
-#     def __getitem__(self, idx):
-#         # load images
-#         img_path = os.path.join("", self.root, self.imgs[idx])
-#         img = cv2.imread(img_path)
-#         try:
-#             img = cv2.resize(img, (self.width, self.height))
-#             img = np.moveaxis(img, -1, 0)
-#         except Exception as e:
-#             print(img_path)
-#             raise e
-#         img_label = img_path.split("\\")[1]
-#         img_label = img_label.split(".")[0]
-#         for i in range(len(img_label)):
-#             if img_label[i].isdigit():
-#                 img_label = img_label[:i]
-#                 break
-#         # img_label = ''.join([i for i in img_label if not i.isdigit()])
-#         img_label = classes.index(img_label)
-#         # print("Label: " + img_label + " Index: " + str(idx))
-#         # there is only one class
-#         return img, img_label
-#
-#     def __len__(self):
-#         return len(self.imgs)
+class DataSet(object):
+    def __init__(self, root, width, height, resize_mul):
+        self.root = root
+        # load all image files, sorting them to
+        # ensure that they are aligned
+        self.imgs = list(sorted(os.listdir(os.path.join("", self.root))))
+        self.width, self.height = width, height
+        self.resize_mul = resize_mul
+
+    def __getitem__(self, idx):
+        # load images
+        img_path = os.path.join("", self.root, self.imgs[idx])
+        img = cv2.imread(img_path)
+        try:
+            # Resize images to reduce model complexity and move axis so the model likes it
+            img = cv2.resize(img, (int(self.width/self.resize_mul), int(self.height/self.resize_mul)))
+            img = np.moveaxis(img, -1, 0)
+        except Exception as e:
+            # For debugging
+            print(img_path)
+            raise e
+        # Get the x and y of the hand from the name
+        img_name = img_path.split("\\")[1]
+        img_name = img_name.split(".")[0]
+        img_nums = img_name.split("_")
+        # Convert the strings to integers
+        img_nums = [int(num) for num in img_nums]
+        print(img_nums)
+        # Map them from 0 to 1 cuz model big like
+        img_tuple = (img_nums[0]/self.width, img_nums[1]/self.height)
+        # there is only one class
+        return img, img_tuple
+
+    def __len__(self):
+        return len(self.imgs)
 
 
 import torchvision.transforms as transforms
@@ -141,6 +144,14 @@ def loss_test():
         optimizer.step()
 
 
+def dataset_test():
+    width, height = 640, 480
+    dataset = DataSet("tuple_data", width, height, 8)
+    a = next(iter(dataset))
+    print(a[0].shape, a[1])
+
+
 if __name__ == '__main__':
     # main("")
-    loss_test()
+    # loss_test()
+    dataset_test()
