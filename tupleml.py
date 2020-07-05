@@ -1,12 +1,12 @@
 import os
-from PIL import Image
 import numpy as np
 import torch
 import cv2
-import torchvision
+import random
 
 import torch.nn.functional as F
 import torch.nn as nn
+import torch.optim as optim
 
 
 class Net(nn.Module):
@@ -80,10 +80,6 @@ class DataSet(object):
     def __len__(self):
         return len(self.imgs)
 
-
-import torchvision.transforms as transforms
-import torch.optim as optim
-import random
 
 def main(root):
     # get some random training images
