@@ -20,25 +20,27 @@ class Net(nn.Module):
         self.width = width
         self.height = height
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
 
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
 
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.relu = nn.ReLU()
 
         self.pool = nn.MaxPool2d(kernel_size=2)
 
-        self.fc1 = nn.Linear(in_features=8960, out_features=120)
+        self.fc1 = nn.Linear(in_features=self.width * self.height, out_features=120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, self.num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x.float())))
         x = self.pool(F.relu(self.conv2(x)))
-        x = self.pool(F.relu(self.conv3(x)))
-        x = x.view(-1, 8960)
+        x = x.view(-1, self.width * self.height)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = self.fc3(x)
 
         return x
 
@@ -81,7 +83,7 @@ class DataSet(object):
 
 import torchvision.transforms as transforms
 import torch.optim as optim
-
+import random
 
 def main(root):
     # get some random training images
@@ -97,7 +99,7 @@ def main(root):
     optimizer = optim.SGD(net.parameters(), lr=0.00001, momentum=0.9)
 
     for epoch in range(5):  # loop over the dataset multiple times
-
+        random.shuffle(trainset.imgs)
         for i, data in enumerate(iter(trainset), 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, target = data
@@ -122,7 +124,7 @@ def main(root):
                 print(target)
 
     print('Finished Training')
-    PATH = "tuple_model_1.pth"
+    PATH = "tuple_model_3.pth"
     torch.save(net.state_dict(), PATH)
 
 def loss_test():
