@@ -19,24 +19,26 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.width = width
         self.height = height
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, kernel_size=3, stride=1, padding=1)
-        self.relu1 = nn.ReLU()
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
 
-        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=3, stride=1, padding=1)
-        self.relu2 = nn.ReLU()
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)
+
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+
         self.pool = nn.MaxPool2d(kernel_size=2)
 
-        self.fc1 = nn.Linear(in_features=self.width * self.height, out_features=120)
+        self.fc1 = nn.Linear(in_features=8960, out_features=120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, self.num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x.float())))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, self.width * self.height)
+        x = self.pool(F.relu(self.conv3(x)))
+        x = x.view(-1, 8960)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = F.relu(self.fc3(x))
 
         return x
 
@@ -68,7 +70,6 @@ class DataSet(object):
         img_nums = img_name.split("_")
         # Convert the strings to integers
         img_nums = [int(num) for num in img_nums]
-        print(img_nums)
         # Map them from 0 to 1 cuz model big like
         img_tuple = (img_nums[0]/self.width, img_nums[1]/self.height)
         # there is only one class
@@ -83,49 +84,46 @@ import torch.optim as optim
 
 
 def main(root):
-    # # get some random training images
-    # # transform = transforms.Compose([transforms.ToTensor()]) # Defing PyTorch Transform
-    # width, height = int(640/8), int(480/8)
-    width, height = 640, 480
-    # trainset = DataSet(root, width, height)
-    #
+    # get some random training images
+    width, height, resize_mul = 640, 480, 8
+    trainset = DataSet(root, width, height, resize_mul)
+
     # trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
     #                                           shuffle=True, num_workers=2)
 
-    loss = nn.MSELoss()
-    net = Net(width, height)
+    mseloss = nn.MSELoss()
+    net = Net(int(width/resize_mul), int(height/resize_mul))
 
+    optimizer = optim.SGD(net.parameters(), lr=0.00001, momentum=0.9)
 
-    # VERY_NICE_criterion = nn.CrossEntropyLoss()
-    # optimizer = optim.SGD(net.parameters(), lr=0.00001, momentum=0.9)
-    #
-    # for epoch in range(5):  # loop over the dataset multiple times
-    #
-    #     running_loss = 0.0
-    #     for i, data in enumerate(trainloader, 0):
-    #         # get the inputs; data is a list of [inputs, labels]
-    #         inputs, labels = data
-    #
-    #         # zero the parameter gradients
-    #         optimizer.zero_grad()
-    #
-    #         # forward + backward + optimize
-    #         outputs = net(inputs)
-    #         loss = VERY_NICE_criterion(outputs, torch.tensor(labels))
-    #         loss.backward()
-    #         optimizer.step()
-    #
-    #         # print statistics
-    #         running_loss += loss.item()
-    #         freq = 20
-    #         if i % freq == freq-1:  # print every 2000 mini-batches
-    #             print('[%d, %5d] loss: %.3f' %
-    #                   (epoch + 1, i + 1, running_loss))
-    #             running_loss = 0.0
-    #
-    # print('Finished Training')
-    # PATH = "sans_model7c.pth"
-    # torch.save(net.state_dict(), PATH)
+    for epoch in range(5):  # loop over the dataset multiple times
+
+        for i, data in enumerate(iter(trainset), 0):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, target = data
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            output = net(torch.tensor([inputs]))[0]
+            # print(output, target)
+            # print(output.shape, torch.tensor(target).shape)
+            loss = mseloss(output, torch.tensor(target))
+            loss.backward()
+            optimizer.step()
+
+            # print statistics
+            freq = 20
+            if i % freq == freq-1:  # print every 2000 mini-batches
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, i + 1, loss.item()))
+                print(output)
+                print(target)
+
+    print('Finished Training')
+    PATH = "tuple_model_1.pth"
+    torch.save(net.state_dict(), PATH)
 
 def loss_test():
     width, height = 640, 480
@@ -152,6 +150,6 @@ def dataset_test():
 
 
 if __name__ == '__main__':
-    # main("")
+    main("tuple_data")
     # loss_test()
-    dataset_test()
+    # dataset_test()
