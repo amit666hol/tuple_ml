@@ -25,19 +25,19 @@ class Net(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.relu2 = nn.ReLU()
 
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
         self.relu = nn.ReLU()
 
         self.pool = nn.MaxPool2d(kernel_size=2)
 
-        self.fc1 = nn.Linear(in_features=self.width * self.height, out_features=120)
+        self.fc1 = nn.Linear(in_features=1920, out_features=120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, self.num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x.float())))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, self.width * self.height)
+        x = x.view(-1, 1920)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
